@@ -38,20 +38,20 @@
 
 namespace snappy {
 
-std::string ReadTestDataFile(const char* base, size_t size_limit) {
-  std::string srcdir;
-  const char* srcdir_env = std::getenv("srcdir");  // This is set by Automake.
-  if (srcdir_env) {
-    srcdir = std::string(srcdir_env) + "/";
-  }
+std::string ReadTestDataFile(const char *base, size_t size_limit) {
+	std::string srcdir;
+	const char *srcdir_env = std::getenv("srcdir"); // This is set by Automake.
+	if (srcdir_env) {
+		srcdir = std::string(srcdir_env) + "/";
+	}
 
-  std::string contents;
-  CHECK_OK(file::GetContents(srcdir + "testdata/" + base, &contents,
-                             file::Defaults()));
-  if (size_limit > 0) {
-    contents = contents.substr(0, size_limit);
-  }
-  return contents;
+	std::string contents;
+	CHECK_OK(file::GetContents(srcdir + "testdata/" + base, &contents,
+							   file::Defaults()));
+	if (size_limit > 0) {
+		contents = contents.substr(0, size_limit);
+	}
+	return contents;
 }
 
-}  // namespace snappy
+} // namespace snappy

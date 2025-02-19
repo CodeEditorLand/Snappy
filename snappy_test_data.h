@@ -36,33 +36,27 @@
 
 namespace snappy {
 
-std::string ReadTestDataFile(const char* base, size_t size_limit);
+std::string ReadTestDataFile(const char *base, size_t size_limit);
 
 // TODO: Replace anonymous namespace with inline variable when we can
 //               rely on C++17.
 namespace {
 
 constexpr struct {
-  const char* label;
-  const char* filename;
-  size_t size_limit;
+	const char *label;
+	const char *filename;
+	size_t size_limit;
 } kTestDataFiles[] = {
-  { "html", "html", 0 },
-  { "urls", "urls.10K", 0 },
-  { "jpg", "fireworks.jpeg", 0 },
-  { "jpg_200", "fireworks.jpeg", 200 },
-  { "pdf", "paper-100k.pdf", 0 },
-  { "html4", "html_x_4", 0 },
-  { "txt1", "alice29.txt", 0 },
-  { "txt2", "asyoulik.txt", 0 },
-  { "txt3", "lcet10.txt", 0 },
-  { "txt4", "plrabn12.txt", 0 },
-  { "pb", "geo.protodata", 0 },
-  { "gaviota", "kppkn.gtb", 0 },
+	{"html", "html", 0},		  {"urls", "urls.10K", 0},
+	{"jpg", "fireworks.jpeg", 0}, {"jpg_200", "fireworks.jpeg", 200},
+	{"pdf", "paper-100k.pdf", 0}, {"html4", "html_x_4", 0},
+	{"txt1", "alice29.txt", 0},	  {"txt2", "asyoulik.txt", 0},
+	{"txt3", "lcet10.txt", 0},	  {"txt4", "plrabn12.txt", 0},
+	{"pb", "geo.protodata", 0},	  {"gaviota", "kppkn.gtb", 0},
 };
 
-}  // namespace
+} // namespace
 
-}  // namespace snappy
+} // namespace snappy
 
-#endif  // THIRD_PARTY_SNAPPY_SNAPPY_TEST_DATA_H__
+#endif // THIRD_PARTY_SNAPPY_SNAPPY_TEST_DATA_H__

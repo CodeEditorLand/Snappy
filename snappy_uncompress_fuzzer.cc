@@ -37,22 +37,22 @@
 #include "snappy.h"
 
 // Entry point for LibFuzzer.
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  std::string input(reinterpret_cast<const char*>(data), size);
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
+	std::string input(reinterpret_cast<const char *>(data), size);
 
-  // Avoid self-crafted decompression bombs.
-  size_t uncompressed_size;
-  constexpr size_t kMaxUncompressedSize = 1 << 20;
-  bool get_uncompressed_length_succeeded = snappy::GetUncompressedLength(
-      input.data(), input.size(), &uncompressed_size);
-  if (!get_uncompressed_length_succeeded ||
-      (uncompressed_size > kMaxUncompressedSize)) {
-    return 0;
-  }
+	// Avoid self-crafted decompression bombs.
+	size_t uncompressed_size;
+	constexpr size_t kMaxUncompressedSize = 1 << 20;
+	bool get_uncompressed_length_succeeded = snappy::GetUncompressedLength(
+		input.data(), input.size(), &uncompressed_size);
+	if (!get_uncompressed_length_succeeded ||
+		(uncompressed_size > kMaxUncompressedSize)) {
+		return 0;
+	}
 
-  std::string uncompressed;
-  // The return value of snappy::Uncompress() is ignored because decompression
-  // will fail on invalid inputs.
-  snappy::Uncompress(input.data(), input.size(), &uncompressed);
-  return 0;
+	std::string uncompressed;
+	// The return value of snappy::Uncompress() is ignored because decompression
+	// will fail on invalid inputs.
+	snappy::Uncompress(input.data(), input.size(), &uncompressed);
+	return 0;
 }

@@ -42,357 +42,363 @@ namespace snappy {
 
 namespace {
 
-void FilesAndLevels(benchmark::internal::Benchmark* benchmark) {
-  for (int i = 0; i < ARRAYSIZE(kTestDataFiles); ++i) {
-    for (int level = snappy::CompressionOptions::MinCompressionLevel();
-         level <= snappy::CompressionOptions::MaxCompressionLevel(); ++level) {
-      benchmark->ArgPair(i, level);
-    }
-  }
+void FilesAndLevels(benchmark::internal::Benchmark *benchmark) {
+	for (int i = 0; i < ARRAYSIZE(kTestDataFiles); ++i) {
+		for (int level = snappy::CompressionOptions::MinCompressionLevel();
+			 level <= snappy::CompressionOptions::MaxCompressionLevel();
+			 ++level) {
+			benchmark->ArgPair(i, level);
+		}
+	}
 }
 
-void BM_UFlat(benchmark::State& state) {
-  // Pick file to process based on state.range(0).
-  int file_index = state.range(0);
+void BM_UFlat(benchmark::State &state) {
+	// Pick file to process based on state.range(0).
+	int file_index = state.range(0);
 
-  CHECK_GE(file_index, 0);
-  CHECK_LT(file_index, ARRAYSIZE(kTestDataFiles));
-  std::string contents =
-      ReadTestDataFile(kTestDataFiles[file_index].filename,
-                       kTestDataFiles[file_index].size_limit);
+	CHECK_GE(file_index, 0);
+	CHECK_LT(file_index, ARRAYSIZE(kTestDataFiles));
+	std::string contents =
+		ReadTestDataFile(kTestDataFiles[file_index].filename,
+						 kTestDataFiles[file_index].size_limit);
 
-  std::string zcontents;
-  snappy::Compress(
-      contents.data(), contents.size(), &zcontents,
-      snappy::CompressionOptions{/*level=*/static_cast<int>(state.range(1))});
-  char* dst = new char[contents.size()];
+	std::string zcontents;
+	snappy::Compress(
+		contents.data(), contents.size(), &zcontents,
+		snappy::CompressionOptions{/*level=*/static_cast<int>(state.range(1))});
+	char *dst = new char[contents.size()];
 
-  for (auto s : state) {
-    CHECK(snappy::RawUncompress(zcontents.data(), zcontents.size(), dst));
-    benchmark::DoNotOptimize(dst);
-  }
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
-                          static_cast<int64_t>(contents.size()));
-  state.SetLabel(kTestDataFiles[file_index].label);
+	for (auto s : state) {
+		CHECK(snappy::RawUncompress(zcontents.data(), zcontents.size(), dst));
+		benchmark::DoNotOptimize(dst);
+	}
+	state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
+							static_cast<int64_t>(contents.size()));
+	state.SetLabel(kTestDataFiles[file_index].label);
 
-  delete[] dst;
+	delete[] dst;
 }
 BENCHMARK(BM_UFlat)->Apply(FilesAndLevels);
 
 struct SourceFiles {
-  SourceFiles() {
-    for (int i = 0; i < kFiles; i++) {
-      std::string contents = ReadTestDataFile(kTestDataFiles[i].filename,
-                                              kTestDataFiles[i].size_limit);
-      max_size = std::max(max_size, contents.size());
-      sizes[i] = contents.size();
-      snappy::Compress(contents.data(), contents.size(), &zcontents[i]);
-    }
-  }
-  static constexpr int kFiles = ARRAYSIZE(kTestDataFiles);
-  std::string zcontents[kFiles];
-  size_t sizes[kFiles];
-  size_t max_size = 0;
+	SourceFiles() {
+		for (int i = 0; i < kFiles; i++) {
+			std::string contents = ReadTestDataFile(
+				kTestDataFiles[i].filename, kTestDataFiles[i].size_limit);
+			max_size = std::max(max_size, contents.size());
+			sizes[i] = contents.size();
+			snappy::Compress(contents.data(), contents.size(), &zcontents[i]);
+		}
+	}
+	static constexpr int kFiles = ARRAYSIZE(kTestDataFiles);
+	std::string zcontents[kFiles];
+	size_t sizes[kFiles];
+	size_t max_size = 0;
 };
 
-void BM_UFlatMedley(benchmark::State& state) {
-  static const SourceFiles* const source = new SourceFiles();
+void BM_UFlatMedley(benchmark::State &state) {
+	static const SourceFiles *const source = new SourceFiles();
 
-  std::vector<char> dst(source->max_size);
+	std::vector<char> dst(source->max_size);
 
-  for (auto s : state) {
-    for (int i = 0; i < SourceFiles::kFiles; i++) {
-      CHECK(snappy::RawUncompress(source->zcontents[i].data(),
-                                  source->zcontents[i].size(), dst.data()));
-      benchmark::DoNotOptimize(dst);
-    }
-  }
+	for (auto s : state) {
+		for (int i = 0; i < SourceFiles::kFiles; i++) {
+			CHECK(snappy::RawUncompress(source->zcontents[i].data(),
+										source->zcontents[i].size(),
+										dst.data()));
+			benchmark::DoNotOptimize(dst);
+		}
+	}
 
-  int64_t source_sizes = 0;
-  for (int i = 0; i < SourceFiles::kFiles; i++) {
-    source_sizes += static_cast<int64_t>(source->sizes[i]);
-  }
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
-                          source_sizes);
+	int64_t source_sizes = 0;
+	for (int i = 0; i < SourceFiles::kFiles; i++) {
+		source_sizes += static_cast<int64_t>(source->sizes[i]);
+	}
+	state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
+							source_sizes);
 }
 BENCHMARK(BM_UFlatMedley);
 
-void BM_UValidate(benchmark::State& state) {
-  // Pick file to process based on state.range(0).
-  int file_index = state.range(0);
+void BM_UValidate(benchmark::State &state) {
+	// Pick file to process based on state.range(0).
+	int file_index = state.range(0);
 
-  CHECK_GE(file_index, 0);
-  CHECK_LT(file_index, ARRAYSIZE(kTestDataFiles));
-  std::string contents =
-      ReadTestDataFile(kTestDataFiles[file_index].filename,
-                       kTestDataFiles[file_index].size_limit);
+	CHECK_GE(file_index, 0);
+	CHECK_LT(file_index, ARRAYSIZE(kTestDataFiles));
+	std::string contents =
+		ReadTestDataFile(kTestDataFiles[file_index].filename,
+						 kTestDataFiles[file_index].size_limit);
 
-  std::string zcontents;
-  snappy::Compress(
-      contents.data(), contents.size(), &zcontents,
-      snappy::CompressionOptions{/*level=*/static_cast<int>(state.range(1))});
+	std::string zcontents;
+	snappy::Compress(
+		contents.data(), contents.size(), &zcontents,
+		snappy::CompressionOptions{/*level=*/static_cast<int>(state.range(1))});
 
-  for (auto s : state) {
-    CHECK(snappy::IsValidCompressedBuffer(zcontents.data(), zcontents.size()));
-  }
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
-                          static_cast<int64_t>(contents.size()));
-  state.SetLabel(kTestDataFiles[file_index].label);
+	for (auto s : state) {
+		CHECK(snappy::IsValidCompressedBuffer(zcontents.data(),
+											  zcontents.size()));
+	}
+	state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
+							static_cast<int64_t>(contents.size()));
+	state.SetLabel(kTestDataFiles[file_index].label);
 }
 BENCHMARK(BM_UValidate)->Apply(FilesAndLevels);
 
-void BM_UValidateMedley(benchmark::State& state) {
-  static const SourceFiles* const source = new SourceFiles();
+void BM_UValidateMedley(benchmark::State &state) {
+	static const SourceFiles *const source = new SourceFiles();
 
-  for (auto s : state) {
-    for (int i = 0; i < SourceFiles::kFiles; i++) {
-      CHECK(snappy::IsValidCompressedBuffer(source->zcontents[i].data(),
-                                            source->zcontents[i].size()));
-    }
-  }
+	for (auto s : state) {
+		for (int i = 0; i < SourceFiles::kFiles; i++) {
+			CHECK(snappy::IsValidCompressedBuffer(source->zcontents[i].data(),
+												  source->zcontents[i].size()));
+		}
+	}
 
-  int64_t source_sizes = 0;
-  for (int i = 0; i < SourceFiles::kFiles; i++) {
-    source_sizes += static_cast<int64_t>(source->sizes[i]);
-  }
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
-                          source_sizes);
+	int64_t source_sizes = 0;
+	for (int i = 0; i < SourceFiles::kFiles; i++) {
+		source_sizes += static_cast<int64_t>(source->sizes[i]);
+	}
+	state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
+							source_sizes);
 }
 BENCHMARK(BM_UValidateMedley);
 
-void BM_UIOVecSource(benchmark::State& state) {
-  // Pick file to process based on state.range(0).
-  int file_index = state.range(0);
-  int level = state.range(1);
+void BM_UIOVecSource(benchmark::State &state) {
+	// Pick file to process based on state.range(0).
+	int file_index = state.range(0);
+	int level = state.range(1);
 
-  CHECK_GE(file_index, 0);
-  CHECK_LT(file_index, ARRAYSIZE(kTestDataFiles));
-  std::string contents =
-      ReadTestDataFile(kTestDataFiles[file_index].filename,
-                       kTestDataFiles[file_index].size_limit);
+	CHECK_GE(file_index, 0);
+	CHECK_LT(file_index, ARRAYSIZE(kTestDataFiles));
+	std::string contents =
+		ReadTestDataFile(kTestDataFiles[file_index].filename,
+						 kTestDataFiles[file_index].size_limit);
 
-  // Create `iovec`s of the `contents`.
-  const int kNumEntries = 10;
-  struct iovec iov[kNumEntries];
-  size_t used_so_far = 0;
-  for (int i = 0; i < kNumEntries; ++i) {
-    iov[i].iov_base = const_cast<char*>(contents.data()) + used_so_far;
-    if (used_so_far == contents.size()) {
-      iov[i].iov_len = 0;
-      continue;
-    }
-    if (i == kNumEntries - 1) {
-      iov[i].iov_len = contents.size() - used_so_far;
-    } else {
-      iov[i].iov_len = contents.size() / kNumEntries;
-    }
-    used_so_far += iov[i].iov_len;
-  }
+	// Create `iovec`s of the `contents`.
+	const int kNumEntries = 10;
+	struct iovec iov[kNumEntries];
+	size_t used_so_far = 0;
+	for (int i = 0; i < kNumEntries; ++i) {
+		iov[i].iov_base = const_cast<char *>(contents.data()) + used_so_far;
+		if (used_so_far == contents.size()) {
+			iov[i].iov_len = 0;
+			continue;
+		}
+		if (i == kNumEntries - 1) {
+			iov[i].iov_len = contents.size() - used_so_far;
+		} else {
+			iov[i].iov_len = contents.size() / kNumEntries;
+		}
+		used_so_far += iov[i].iov_len;
+	}
 
-  char* dst = new char[snappy::MaxCompressedLength(contents.size())];
-  size_t zsize = 0;
-  for (auto s : state) {
-    snappy::RawCompressFromIOVec(iov, contents.size(), dst, &zsize,
-                                 snappy::CompressionOptions{/*level=*/level});
-    benchmark::DoNotOptimize(iov);
-  }
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
-                          static_cast<int64_t>(contents.size()));
-  const double compression_ratio =
-      static_cast<double>(zsize) / std::max<size_t>(1, contents.size());
-  state.SetLabel(StrFormat("%s (%.2f %%)", kTestDataFiles[file_index].label,
-                           100.0 * compression_ratio));
-  VLOG(0) << StrFormat("compression for %s: %d -> %d bytes",
-                       kTestDataFiles[file_index].label, contents.size(),
-                       zsize);
+	char *dst = new char[snappy::MaxCompressedLength(contents.size())];
+	size_t zsize = 0;
+	for (auto s : state) {
+		snappy::RawCompressFromIOVec(
+			iov, contents.size(), dst, &zsize,
+			snappy::CompressionOptions{/*level=*/level});
+		benchmark::DoNotOptimize(iov);
+	}
+	state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
+							static_cast<int64_t>(contents.size()));
+	const double compression_ratio =
+		static_cast<double>(zsize) / std::max<size_t>(1, contents.size());
+	state.SetLabel(StrFormat("%s (%.2f %%)", kTestDataFiles[file_index].label,
+							 100.0 * compression_ratio));
+	VLOG(0) << StrFormat("compression for %s: %d -> %d bytes",
+						 kTestDataFiles[file_index].label, contents.size(),
+						 zsize);
 
-  delete[] dst;
+	delete[] dst;
 }
 BENCHMARK(BM_UIOVecSource)->Apply(FilesAndLevels);
 
-void BM_UIOVecSink(benchmark::State& state) {
-  // Pick file to process based on state.range(0).
-  int file_index = state.range(0);
+void BM_UIOVecSink(benchmark::State &state) {
+	// Pick file to process based on state.range(0).
+	int file_index = state.range(0);
 
-  CHECK_GE(file_index, 0);
-  CHECK_LT(file_index, ARRAYSIZE(kTestDataFiles));
-  std::string contents =
-      ReadTestDataFile(kTestDataFiles[file_index].filename,
-                       kTestDataFiles[file_index].size_limit);
+	CHECK_GE(file_index, 0);
+	CHECK_LT(file_index, ARRAYSIZE(kTestDataFiles));
+	std::string contents =
+		ReadTestDataFile(kTestDataFiles[file_index].filename,
+						 kTestDataFiles[file_index].size_limit);
 
-  std::string zcontents;
-  snappy::Compress(contents.data(), contents.size(), &zcontents);
+	std::string zcontents;
+	snappy::Compress(contents.data(), contents.size(), &zcontents);
 
-  // Uncompress into an iovec containing ten entries.
-  const int kNumEntries = 10;
-  struct iovec iov[kNumEntries];
-  char* dst = new char[contents.size()];
-  size_t used_so_far = 0;
-  for (int i = 0; i < kNumEntries; ++i) {
-    iov[i].iov_base = dst + used_so_far;
-    if (used_so_far == contents.size()) {
-      iov[i].iov_len = 0;
-      continue;
-    }
+	// Uncompress into an iovec containing ten entries.
+	const int kNumEntries = 10;
+	struct iovec iov[kNumEntries];
+	char *dst = new char[contents.size()];
+	size_t used_so_far = 0;
+	for (int i = 0; i < kNumEntries; ++i) {
+		iov[i].iov_base = dst + used_so_far;
+		if (used_so_far == contents.size()) {
+			iov[i].iov_len = 0;
+			continue;
+		}
 
-    if (i == kNumEntries - 1) {
-      iov[i].iov_len = contents.size() - used_so_far;
-    } else {
-      iov[i].iov_len = contents.size() / kNumEntries;
-    }
-    used_so_far += iov[i].iov_len;
-  }
+		if (i == kNumEntries - 1) {
+			iov[i].iov_len = contents.size() - used_so_far;
+		} else {
+			iov[i].iov_len = contents.size() / kNumEntries;
+		}
+		used_so_far += iov[i].iov_len;
+	}
 
-  for (auto s : state) {
-    CHECK(snappy::RawUncompressToIOVec(zcontents.data(), zcontents.size(), iov,
-                                       kNumEntries));
-    benchmark::DoNotOptimize(iov);
-  }
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
-                          static_cast<int64_t>(contents.size()));
-  state.SetLabel(kTestDataFiles[file_index].label);
+	for (auto s : state) {
+		CHECK(snappy::RawUncompressToIOVec(zcontents.data(), zcontents.size(),
+										   iov, kNumEntries));
+		benchmark::DoNotOptimize(iov);
+	}
+	state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
+							static_cast<int64_t>(contents.size()));
+	state.SetLabel(kTestDataFiles[file_index].label);
 
-  delete[] dst;
+	delete[] dst;
 }
 BENCHMARK(BM_UIOVecSink)->DenseRange(0, 4);
 
-void BM_UFlatSink(benchmark::State& state) {
-  // Pick file to process based on state.range(0).
-  int file_index = state.range(0);
+void BM_UFlatSink(benchmark::State &state) {
+	// Pick file to process based on state.range(0).
+	int file_index = state.range(0);
 
-  CHECK_GE(file_index, 0);
-  CHECK_LT(file_index, ARRAYSIZE(kTestDataFiles));
-  std::string contents =
-      ReadTestDataFile(kTestDataFiles[file_index].filename,
-                       kTestDataFiles[file_index].size_limit);
+	CHECK_GE(file_index, 0);
+	CHECK_LT(file_index, ARRAYSIZE(kTestDataFiles));
+	std::string contents =
+		ReadTestDataFile(kTestDataFiles[file_index].filename,
+						 kTestDataFiles[file_index].size_limit);
 
-  std::string zcontents;
-  snappy::Compress(
-      contents.data(), contents.size(), &zcontents,
-      snappy::CompressionOptions{/*level=*/static_cast<int>(state.range(1))});
-  char* dst = new char[contents.size()];
+	std::string zcontents;
+	snappy::Compress(
+		contents.data(), contents.size(), &zcontents,
+		snappy::CompressionOptions{/*level=*/static_cast<int>(state.range(1))});
+	char *dst = new char[contents.size()];
 
-  for (auto s : state) {
-    snappy::ByteArraySource source(zcontents.data(), zcontents.size());
-    snappy::UncheckedByteArraySink sink(dst);
-    CHECK(snappy::Uncompress(&source, &sink));
-    benchmark::DoNotOptimize(sink);
-  }
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
-                          static_cast<int64_t>(contents.size()));
-  state.SetLabel(kTestDataFiles[file_index].label);
+	for (auto s : state) {
+		snappy::ByteArraySource source(zcontents.data(), zcontents.size());
+		snappy::UncheckedByteArraySink sink(dst);
+		CHECK(snappy::Uncompress(&source, &sink));
+		benchmark::DoNotOptimize(sink);
+	}
+	state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
+							static_cast<int64_t>(contents.size()));
+	state.SetLabel(kTestDataFiles[file_index].label);
 
-  std::string s(dst, contents.size());
-  CHECK_EQ(contents, s);
+	std::string s(dst, contents.size());
+	CHECK_EQ(contents, s);
 
-  delete[] dst;
+	delete[] dst;
 }
 
 BENCHMARK(BM_UFlatSink)->Apply(FilesAndLevels);
 
-void BM_ZFlat(benchmark::State& state) {
-  // Pick file to process based on state.range(0).
-  int file_index = state.range(0);
-  int level = state.range(1);
+void BM_ZFlat(benchmark::State &state) {
+	// Pick file to process based on state.range(0).
+	int file_index = state.range(0);
+	int level = state.range(1);
 
-  CHECK_GE(file_index, 0);
-  CHECK_LT(file_index, ARRAYSIZE(kTestDataFiles));
-  std::string contents =
-      ReadTestDataFile(kTestDataFiles[file_index].filename,
-                       kTestDataFiles[file_index].size_limit);
-  char* dst = new char[snappy::MaxCompressedLength(contents.size())];
+	CHECK_GE(file_index, 0);
+	CHECK_LT(file_index, ARRAYSIZE(kTestDataFiles));
+	std::string contents =
+		ReadTestDataFile(kTestDataFiles[file_index].filename,
+						 kTestDataFiles[file_index].size_limit);
+	char *dst = new char[snappy::MaxCompressedLength(contents.size())];
 
-  size_t zsize = 0;
-  for (auto s : state) {
-    snappy::RawCompress(contents.data(), contents.size(), dst, &zsize,
-                        snappy::CompressionOptions{/*level=*/level});
-    benchmark::DoNotOptimize(dst);
-  }
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
-                          static_cast<int64_t>(contents.size()));
-  const double compression_ratio =
-      static_cast<double>(zsize) / std::max<size_t>(1, contents.size());
-  state.SetLabel(StrFormat("%s (%.2f %%)", kTestDataFiles[file_index].label,
-                           100.0 * compression_ratio));
-  VLOG(0) << StrFormat("compression for %s: %d -> %d bytes",
-                       kTestDataFiles[file_index].label, contents.size(),
-                       zsize);
-  delete[] dst;
+	size_t zsize = 0;
+	for (auto s : state) {
+		snappy::RawCompress(contents.data(), contents.size(), dst, &zsize,
+							snappy::CompressionOptions{/*level=*/level});
+		benchmark::DoNotOptimize(dst);
+	}
+	state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
+							static_cast<int64_t>(contents.size()));
+	const double compression_ratio =
+		static_cast<double>(zsize) / std::max<size_t>(1, contents.size());
+	state.SetLabel(StrFormat("%s (%.2f %%)", kTestDataFiles[file_index].label,
+							 100.0 * compression_ratio));
+	VLOG(0) << StrFormat("compression for %s: %d -> %d bytes",
+						 kTestDataFiles[file_index].label, contents.size(),
+						 zsize);
+	delete[] dst;
 }
 
 BENCHMARK(BM_ZFlat)->Apply(FilesAndLevels);
 
-void BM_ZFlatAll(benchmark::State& state) {
-  const int num_files = ARRAYSIZE(kTestDataFiles);
-  int level = state.range(0);
+void BM_ZFlatAll(benchmark::State &state) {
+	const int num_files = ARRAYSIZE(kTestDataFiles);
+	int level = state.range(0);
 
-  std::vector<std::string> contents(num_files);
-  std::vector<char*> dst(num_files);
+	std::vector<std::string> contents(num_files);
+	std::vector<char *> dst(num_files);
 
-  int64_t total_contents_size = 0;
-  for (int i = 0; i < num_files; ++i) {
-    contents[i] = ReadTestDataFile(kTestDataFiles[i].filename,
-                                   kTestDataFiles[i].size_limit);
-    dst[i] = new char[snappy::MaxCompressedLength(contents[i].size())];
-    total_contents_size += contents[i].size();
-  }
+	int64_t total_contents_size = 0;
+	for (int i = 0; i < num_files; ++i) {
+		contents[i] = ReadTestDataFile(kTestDataFiles[i].filename,
+									   kTestDataFiles[i].size_limit);
+		dst[i] = new char[snappy::MaxCompressedLength(contents[i].size())];
+		total_contents_size += contents[i].size();
+	}
 
-  size_t zsize = 0;
-  for (auto s : state) {
-    for (int i = 0; i < num_files; ++i) {
-      snappy::RawCompress(contents[i].data(), contents[i].size(), dst[i],
-                          &zsize, snappy::CompressionOptions{/*level=*/level});
-      benchmark::DoNotOptimize(dst);
-    }
-  }
+	size_t zsize = 0;
+	for (auto s : state) {
+		for (int i = 0; i < num_files; ++i) {
+			snappy::RawCompress(contents[i].data(), contents[i].size(), dst[i],
+								&zsize,
+								snappy::CompressionOptions{/*level=*/level});
+			benchmark::DoNotOptimize(dst);
+		}
+	}
 
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
-                          total_contents_size);
+	state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
+							total_contents_size);
 
-  for (char* dst_item : dst) {
-    delete[] dst_item;
-  }
-  state.SetLabel(StrFormat("%d kTestDataFiles", num_files));
+	for (char *dst_item : dst) {
+		delete[] dst_item;
+	}
+	state.SetLabel(StrFormat("%d kTestDataFiles", num_files));
 }
 BENCHMARK(BM_ZFlatAll)->DenseRange(1, 2);
 
-void BM_ZFlatIncreasingTableSize(benchmark::State& state) {
-  CHECK_GT(ARRAYSIZE(kTestDataFiles), 0);
-  int level = state.range(0);
-  const std::string base_content = ReadTestDataFile(
-      kTestDataFiles[0].filename, kTestDataFiles[0].size_limit);
+void BM_ZFlatIncreasingTableSize(benchmark::State &state) {
+	CHECK_GT(ARRAYSIZE(kTestDataFiles), 0);
+	int level = state.range(0);
+	const std::string base_content = ReadTestDataFile(
+		kTestDataFiles[0].filename, kTestDataFiles[0].size_limit);
 
-  std::vector<std::string> contents;
-  std::vector<char*> dst;
-  int64_t total_contents_size = 0;
-  for (int table_bits = kMinHashTableBits; table_bits <= kMaxHashTableBits;
-       ++table_bits) {
-    std::string content = base_content;
-    content.resize(1 << table_bits);
-    dst.push_back(new char[snappy::MaxCompressedLength(content.size())]);
-    total_contents_size += content.size();
-    contents.push_back(std::move(content));
-  }
+	std::vector<std::string> contents;
+	std::vector<char *> dst;
+	int64_t total_contents_size = 0;
+	for (int table_bits = kMinHashTableBits; table_bits <= kMaxHashTableBits;
+		 ++table_bits) {
+		std::string content = base_content;
+		content.resize(1 << table_bits);
+		dst.push_back(new char[snappy::MaxCompressedLength(content.size())]);
+		total_contents_size += content.size();
+		contents.push_back(std::move(content));
+	}
 
-  size_t zsize = 0;
-  for (auto s : state) {
-    for (size_t i = 0; i < contents.size(); ++i) {
-      snappy::RawCompress(contents[i].data(), contents[i].size(), dst[i],
-                          &zsize, snappy::CompressionOptions{/*level=*/level});
-      benchmark::DoNotOptimize(dst);
-    }
-  }
+	size_t zsize = 0;
+	for (auto s : state) {
+		for (size_t i = 0; i < contents.size(); ++i) {
+			snappy::RawCompress(contents[i].data(), contents[i].size(), dst[i],
+								&zsize,
+								snappy::CompressionOptions{/*level=*/level});
+			benchmark::DoNotOptimize(dst);
+		}
+	}
 
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
-                          total_contents_size);
+	state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
+							total_contents_size);
 
-  for (char* dst_item : dst) {
-    delete[] dst_item;
-  }
-  state.SetLabel(StrFormat("%d tables", contents.size()));
+	for (char *dst_item : dst) {
+		delete[] dst_item;
+	}
+	state.SetLabel(StrFormat("%d tables", contents.size()));
 }
 BENCHMARK(BM_ZFlatIncreasingTableSize)->DenseRange(1, 2);
 
-}  // namespace
+} // namespace
 
-}  // namespace snappy
+} // namespace snappy

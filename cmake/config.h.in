@@ -66,4 +66,4 @@
    first (like Motorola and SPARC, unlike Intel and VAX). */
 #cmakedefine01 SNAPPY_IS_BIG_ENDIAN
 
-#endif  // THIRD_PARTY_SNAPPY_OPENSOURCE_CMAKE_CONFIG_H_
+#endif // THIRD_PARTY_SNAPPY_OPENSOURCE_CMAKE_CONFIG_H_
