@@ -22,10 +22,10 @@ use GitHub pull requests for this purpose. Consult
 [GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
 information on using pull requests.
 
-See [the README](README.md#contributing-to-the-snappy-project) for areas where
-we are likely to accept external contributions.
+See [the README](README.md#contributing-to-the-snappy-project) for areas
+where we are likely to accept external contributions.
 
 ## Community Guidelines
 
-This project follows
-[Google's Open Source Community Guidelines](https://opensource.google/conduct/).
+This project follows [Google's Open Source Community
+Guidelines](https://opensource.google/conduct/).
